@@ -1,0 +1,13 @@
+{
+	"exchanges":[
+		{
+			"id":0,
+			"name":"mopub",
+			"enabled":true,
+			"nurl":""
+		}
+	],
+
+	"bidders":[
+	]
+}
