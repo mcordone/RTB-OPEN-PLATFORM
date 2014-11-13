@@ -1,33 +1,38 @@
 
 var url = require('url');
 var config = require('../config/config');
+var resProcessor = require('./responseProcessor');
 
 exports.processRequest = function(req, res){
-	//TODO 
-	//1- get exchange name from req url
-	//2- get exchange request data
+	//ACTION:
+	//1- get exchange name from req uri
+	//2- get exchange request payload data
 	//3- call appropiate exchange translator
 	//debugger;
 
 	//get exchange name from URI
 	var exchName = getExchangeNameFromURI(req)
 
-	//get exchange request bid data
-	var requestBidData;
+	//get exchange request bid payload data
+	var requestBidPayload;
 	if(undefined != exchName){
-		requestBidData = getExchangeRequestBidData(req, res, function(error, data){
+		getExchangeRequestBidData(req, res, function(error, data){
 			if (error) {
 				//TODO log error and end request
+				console.log("*** " + error.message());
+				resProcessor.sendNoBidResponse(res);
+				req.connection.destroy();
 			};
-			//console.info(data);
-			requestBidData = data;
+
+			requestBidPayload = data;
+
+			//TODO get proper exchange translator/adapter
 		});
-		//console.info('*** BID DATA ', requestBidData);
 	}
 	else{
-		//XXX no request data :: send 204 response and end request
-		res.writeHead(204, {'Content-Type': 'text/json; charset=UTF-8'}).end();
-	    req.connection.destroy();
+		//XXX no request data :: send 204 response (no bid) and end request
+		resProcessor.sendNoBidResponse(res);
+		req.connection.destroy();
 	}
 
 }
@@ -59,10 +64,10 @@ function getExchangeRequestBidData(req, res, callback) {
 	  bidRequestData += data;
 	  if(bidRequestData.length > 1e6) {
 	      bidRequestData = "";
-	      res.writeHead(204, {'Content-Type': 'text/json; charset=UTF-8'}).end();
+	      resProcessor.sendNoBidResponse(res);
+		  req.connection.destroy();
 	      //TODO log HTTP Error 413 Request entity too large
 	      //response.writeHead(413, {'Content-Type': 'text/plain'}).end();
-	      req.connection.destroy();
 	  }
 	});
 
@@ -75,10 +80,13 @@ function getExchangeRequestBidData(req, res, callback) {
 	});
 
 	req.on('error', function(error){
-		callback(error, null);
-	})
+		process.nextTick( function(){
+			callback(new Error("ERROR GETTING EXCHANGE REQUEST DATA"), null);
+			});
 
-	//TODO listen for error receiving data
+	})
 }
 
-//module.exports = processRequest;
+function getExchangeAdapter(){
+	
+}
