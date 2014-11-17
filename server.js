@@ -2,14 +2,25 @@ var http = require('http');
 var url = require('url');
 var querystring = require('querystring');
 var Config = require('./config/config');
-var exchangeManager = require('./exchanges/exchangeManager');
-var requestHandler = require('./exchanges/requestProcessor.js');
+var ExchangeManager = require('./exchanges/exchangeManager');
+var requestHandler = require('./httpHandler/requestHandler');
 
-//START APPLICATION CONFIGURATION
+//APPLICATION CONFIGURATION CONTINUES...
 Config.on('CONFIGURATION_READY', function(){
   console.log('**** CONFIGURATION READY');
 
+  //Initialize ExchangeManager
+  ExchangeManager.initialize();
 
+  //create and start server
+  createServer();
+
+});
+
+//START APPLICATION CONFIGURATION
+Config.init();
+
+function createServer(){
   http.createServer(function(request, response) {
 
       if(request.method == 'POST') {
@@ -20,8 +31,6 @@ Config.on('CONFIGURATION_READY', function(){
         response.end();
       }
     
-  }).listen(8124);
-});
-
-Config.init();
+  }).listen(8124); //TODO make port a configuration constant
+}
 

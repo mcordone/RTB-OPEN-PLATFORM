@@ -1,11 +1,30 @@
 var Config = require('../config/config');
 
-//list of exchanges config data
-//var exchangesList = Config.getExchanges();
-var exchangeAdaptorList = {};
+
+var isInitialized = false,
+	exchangesList,
+	exchangeAdaptorInstList = {};
 
 //exchangeManager instance
 var ExchangeManager = {};
+
+ExchangeManager.initialize = function(){
+	if(!isInitialized){
+		exchangesList = Config.getExchanges();
+
+		if (exchangesList != undefined) {
+			//create instances
+			exchangesList.forEach(function(element, index, array){
+				var ExchAdapter = require('./'+element.adapterClass);
+
+				//register new adaptor
+				registerAdaptor(element.name, new ExchAdapter());
+			});
+		}
+
+		isInitialized = true;
+	}
+};
 
 /*
 	@desc: return exchange configuration data with matching name.
@@ -67,19 +86,20 @@ ExchangeManager.getExchangeFromPathname = function(pathname){
 	return exchElem;
 }
 
-ExchangeManager.getExchangeAdaptor = function(){
-
+ExchangeManager.getExchangeAdaptorInst = function(exchName){
+	//TODO unitest
+	return exchangeAdaptorInstList[exchName];
 }
 
 /* Private members */
-function registerAdaptor(exchangeName, adaptorInst){
-	exchangeAdaptorList[exchangeName] = adaptorInst;
+function registerAdaptor(exchName, adaptorInst){
+	exchangeAdaptorInstList[exchName] = adaptorInst;
 }
 
-function unregisterAdaptor(exchangeName, adaptorInst){
-	if(exchangeAdaptorList.hasOwnProperty()){
-		exchangeAdaptorList[exchangeName] = null;
-		delete exchangeAdaptorList[exchangeName];
+function unregisterAdaptor(exchName, adaptorInst){
+	if(exchangeAdaptorInstList.hasOwnProperty(exchName)){
+		exchangeAdaptorInstList[exchName] = null;
+		delete exchangeAdaptorInstList[exchName];
 	}
 }
 
