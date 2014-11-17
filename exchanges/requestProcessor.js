@@ -1,6 +1,7 @@
 
 var url = require('url');
 var config = require('../config/config');
+var ExchangeManager = require('./exchangeManager');
 var resProcessor = require('./responseProcessor');
 
 exports.processRequest = function(req, res){
@@ -10,16 +11,17 @@ exports.processRequest = function(req, res){
 	//3- call appropiate exchange translator
 	//debugger;
 
-	//get exchange name from URI
-	var exchName = getExchangeNameFromURI(req)
+	//get exchange name from pathname (URI)
+	var pathname = url.parse(req.url).pathname.toLowerCase();
+	var exchConfigData = ExchangeManager.getExchangeFromPathname(pathname);
 
 	//get exchange request bid payload data
 	var requestBidPayload;
-	if(undefined != exchName){
+	if(undefined != exchConfigData){
 		getExchangeRequestBidData(req, res, function(error, data){
 			if (error) {
 				//TODO log error and end request
-				console.log("*** " + error.message());
+				console.log("*** ERROR: " + error.message());
 				resProcessor.sendNoBidResponse(res);
 				req.connection.destroy();
 			};
@@ -27,6 +29,7 @@ exports.processRequest = function(req, res){
 			requestBidPayload = data;
 
 			//TODO get proper exchange translator/adapter
+			//res.end();
 		});
 	}
 	else{
@@ -35,25 +38,6 @@ exports.processRequest = function(req, res){
 		req.connection.destroy();
 	}
 
-}
-
-function getExchangeNameFromURI(req){
-	//TODO loop through a configuration and find the corresponding exchange object
-	var pathname = url.parse(req.url).pathname.toLowerCase();
-		exchCollection = config.getExchangeConfig(),
-		exchangeName = undefined,
-		indexPos = -1;
-
-	for(var i=0; i < exchCollection.length; i++){
-
-		indexPos = pathname.indexOf(exchCollection[i].name.toLowerCase());
-		if(indexPos > -1) {
-			exchangeName = exchCollection[i].name;
-			break;
-		};
-	}
-
-	return exchangeName;
 }
 
 function getExchangeRequestBidData(req, res, callback) {
@@ -73,6 +57,8 @@ function getExchangeRequestBidData(req, res, callback) {
 
 	req.on('end', function() {
 		bidRequestData = JSON.parse(bidRequestData);
+
+		//TODO perhaps check request data integrity
 
 		process.nextTick( function(){
 			callback(null, bidRequestData);
